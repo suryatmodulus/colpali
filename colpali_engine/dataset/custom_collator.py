@@ -129,6 +129,60 @@ class CustomCollator:
 
         return batch_doc
 
+    def forward_vision_phi3v(self, examples):
+        texts_doc = []
+        texts_query = []
+        images = []
+        for example in examples:
+            image = example["image"]
+
+            text_query = None
+            if example["query"] is not None:
+                query = example["query"]
+                messages_query = [
+                    {
+                        "role": "user",
+                        "content": f"Question: {query}<end_of_utterance><end_of_utterance><end_of_utterance><end_of_utterance><end_of_utterance>",
+                    },
+                ]
+                text_query = self.processor.tokenizer.apply_chat_template(messages_query, add_generation_prompt=False).strip()
+
+            messages_doc = [
+                {
+                    "role": "user",
+                    "content": "<|image_1|>\nDescribe the image.",
+                },
+            ]
+
+            text_doc = self.processor.tokenizer.apply_chat_template(messages_doc, add_generation_prompt=False)
+
+            texts_doc.append(text_doc.strip())
+            texts_query.append(text_query)
+            images.append([image])
+
+        batch_doc = self.processor(
+            text=texts_doc, images=images, return_tensors="pt", padding="longest", max_length=self.max_length
+        )
+
+        batch_query = None
+        if all([t is None for t in texts_query]):
+            print("All queries are None. Returning None for all queries.")
+        elif any([t is None for t in texts_query]):
+            raise ValueError("Some queries are None. This collator does not support None queries yet.")
+        else:
+            batch_query = self.processor(
+                text=texts_query, return_tensors="pt", padding="longest", max_length=self.max_length
+            )
+
+        # prefix each key with "doc_" or "query_" to avoid key conflicts
+        batch_doc = {f"doc_{k}": v for k, v in batch_doc.items()}
+
+        if batch_query is not None:
+            batch_query = {f"query_{k}": v for k, v in batch_query.items()}
+            batch_doc.update(batch_query)
+
+        return batch_doc
+
     def forward_vision_pali(self, examples):
         texts_doc = []
         texts_query = []
@@ -182,6 +236,7 @@ class CustomCollator:
             batch_doc.update(batch_query)
 
         return batch_doc
+
 
     def forward_vision_siglip(self, examples):
         texts_doc = []
