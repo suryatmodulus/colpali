@@ -11,7 +11,7 @@ config:
     class_to_instanciate: !ext colpali_engine.models.florence2_colbert_architecture.ColFlorence2
     pretrained_model_name_or_path: "./models/Florence-2-large"
     # attn_implementation: "eager"
-    torch_dtype:  !ext torch.bfloat16
+    # torch_dtype:  !ext torch.bfloat16
 #    device_map: "auto"
 #    quantization_config:
 #      (): transformers.BitsAndBytesConfig
