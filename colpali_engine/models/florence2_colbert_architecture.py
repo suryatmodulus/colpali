@@ -41,6 +41,8 @@ class ColFlorence2(Florence2PreTrainedModel):
         self.dim = 128
         self.custom_text_proj = nn.Linear(self.model.config.text_config.hidden_size, self.dim)
         self.main_input_name = "doc_input_ids"
+        # self.apply(self._initialize_weights)
+        # self.tie_weights()
 
     def forward(self, *args, **kwargs):
         """
@@ -54,6 +56,9 @@ class ColFlorence2(Florence2PreTrainedModel):
         - torch.Tensor: Embeddings of shape (batch_size, num_tokens, dim)
         """
         # outputs = self.model(*args, **kwargs)
+        if "pixel_values" in kwargs:
+            kwargs["pixel_values"] = kwargs["pixel_values"].to(dtype=self.dtype)
+
         outputs = self.model(*args, **kwargs, decoder_input_ids=kwargs["input_ids"][:, :1], output_hidden_states=True)
         last_hidden_states = outputs.encoder_last_hidden_state # (batch_size, sequence_length, hidden_size)
         proj = self.custom_text_proj(last_hidden_states)

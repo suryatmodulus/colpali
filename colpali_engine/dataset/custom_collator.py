@@ -167,13 +167,15 @@ class CustomCollator:
             raise ValueError("Some queries are None. This collator does not support None queries yet.")
         else:
             batch_query = self.processor(
-                images=None,  # NOTE: the image is not used in batch_query but it is required for calling the processor
+                images=images,  # NOTE: the image is not used in batch_query but it is required for calling the processor
                 text=texts_query,
                 return_tensors="pt",
                 padding="longest",
                 max_length=self.max_length + self.processor.image_seq_length,
             )
             del batch_query["pixel_values"]
+            batch_query["input_ids"] = batch_query["input_ids"][..., self.processor.image_seq_length :]
+            batch_query["attention_mask"] = batch_query["attention_mask"][..., self.processor.image_seq_length :]
 
         # prefix each key with "doc_" or "query_" to avoid key conflicts
         batch_doc = {f"doc_{k}": v for k, v in batch_doc.items()}
